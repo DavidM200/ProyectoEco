@@ -1,0 +1,91 @@
+﻿@page "/paymethods"
+@using System.Timers;
+@using System.Text.Json;
+@inject Services.IPayMethodService payMethodService
+@inject IJSRuntime JsRuntime
+
+<h3>Metodos de Pago</h3>
+@if (showAlert)
+{
+    <div class="alert alert-info" role="alert">
+        Eliminado
+    </div>
+}
+@if (payMethods == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else
+{
+    <input type="search" placeholder="Buscar por descripcion" @bind='busqueda' />
+    <button class="btn btn-primary" @onclick="buscar">Buscar</button>
+    <DxGrid Data="@payMethods"
+        KeyFieldName="ID"
+        EditModelSaving="Grid_EditModelSaving"
+        DataItemDeleting="Grid_DataItemDeleting"
+        ShowFilterRow="true">
+        <Columns>
+            <DxGridCommandColumn Width="120px" />
+            <DxGridDataColumn FieldName="ID" Visible=false />
+            <DxGridDataColumn FieldName="Name" Caption="Nombre"/>
+        </Columns>
+        
+        <EditFormTemplate Context ="EditFormContext">
+            @{
+                var pay = (PayMethod)EditFormContext.EditModel;
+            }
+             <DxFormLayout CssClass="w-100">
+             <DxFormLayoutItem Caption = "Nombre: " ColSpanMd="6">
+                <DxTextBox @bind-Text="@pay.Name"/>
+             </DxFormLayoutItem>
+             </DxFormLayout>
+        </EditFormTemplate>
+    </DxGrid>
+    <br>
+    <p><b>Metodos de Pago Totales: @payMethods.Length</b></p>
+}
+
+@code {
+    private PayMethod[] payMethods;
+
+    private string busqueda;
+    private bool showAlert;
+
+    protected override async Task OnInitializedAsync()
+    {
+        payMethods = await payMethodService.GetPayMethods();
+    }
+    async Task Grid_EditModelSaving(GridEditModelSavingEventArgs e)
+    {
+        Console.WriteLine("Modelsaving");
+        Console.WriteLine(e);
+        var pay = (PayMethod)e.EditModel;
+        await (e.IsNew ? payMethodService.InsertPayMethodAsync(pay) : payMethodService.UpdatePayMethodAsync(pay));
+        payMethods = await payMethodService.GetPayMethods();
+        StateHasChanged();
+    }
+    async Task Grid_DataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        var pay = (PayMethod)e.DataItem;
+        bool success = await payMethodService.DeletePayMethodAsync(pay.ID);
+        if (!success)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Ocurrió un error al eliminar");
+            return;
+        }
+        payMethods = await payMethodService.GetPayMethods();
+        showAlert = true;
+        StateHasChanged();
+
+        await Task.Delay(5000); // Espera de 5 segundos
+        showAlert = false;
+        StateHasChanged();
+    }
+    private async Task buscar()
+    {
+        payMethods = string.IsNullOrEmpty(busqueda)
+            ? await payMethodService.GetPayMethods()
+            : await payMethodService.Buscar(busqueda);
+        busqueda = string.Empty;
+    }
+}

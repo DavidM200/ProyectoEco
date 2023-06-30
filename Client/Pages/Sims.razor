@@ -1,0 +1,242 @@
+﻿@page "/sim"
+@using System.Text.Json;
+@using System.Timers;
+@using GestionTelefonos.Client.Pages.Searchers
+@using GestionTelefonos.Client.Pages.Components
+@using GestionTelefonos.Shared.Contracts.Forms
+@inject Services.ISimService simService
+@inject Services.ILineService lineService
+@inject IJSRuntime JsRuntime
+
+@if (showAlert)
+{
+    <div class="alert alert-info" role="alert">
+        Eliminado
+    </div>
+}
+
+@if (sims == null)
+{
+    <div class="text-center">
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only"></span>
+    </div>
+    <div>
+        Cargando....
+    </div>
+   </div>
+}
+else
+{
+    //Estilo para los botones de  filtrado en el grid
+    <style>
+        .filter-type-container {
+            display: flex;
+        }
+        .filter-type-container > div {
+             width: 100%;
+        }
+        .filter-type-button {
+            margin-right: 5px;
+        }
+    </style>
+
+    <div style="margin-top:30px;">
+         <h3>Sims</h3>
+    </div>
+    
+    <br />
+    //Funciona bien
+    <div  style="float:right">
+    <SimsSearcher
+              @ref=simsSearcher
+              onFormSearch=@(async(SimSearcherForm)=> {
+              await FormSearch(SimSearcherForm);
+              })
+              onInputSearch=@(async (search) => {
+                  await InputSearch(search);
+              })/>
+    </div>
+     <br />
+     <div>
+    <DxGrid Data="@sims"
+        style="margin-top:50px;margin-right:50px"
+        KeyFieldName="ID"
+        EditModelSaving="Grid_EditModelSaving"
+        DataItemDeleting="Grid_DataItemDeleting"
+        ShowFilterRow="true"
+        PageSize="5"
+        PagerPosition="GridPagerPosition.TopAndBottom"
+        CssClass ="w-100"
+        >
+        <Columns>
+            <DxGridCommandColumn Width="120px" />
+            <DxGridDataColumn FieldName="ID" Visible=false />
+            <DxGridDataColumn FieldName="IDLine" Visible=false />
+            <DxGridDataColumn Caption="Nº Telefono Linea" FilterRowEditorVisible="false"  Width="100px">
+                <CellDisplayTemplate>
+                    @{
+                        var sim = (Sim)context.DataItem;
+                        var lin = lines.FirstOrDefault(x => x.ID == sim.IDLine);
+                        <span>@(lin == null ? "?": $"{lin.PhoneNumber}" )</span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="NSerie" Caption="Numero de serie"  Width="150px">
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxTextBox Text="@((string)context.FilterRowValue)" 
+                                    TextChanged="(string v) => context.FilterRowValue = v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="Type" Caption="Tipo de SIM"  Width="100px">
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxTextBox Text="@((string)context.FilterRowValue)"
+                                    TextChanged="(string v) => context.FilterRowValue = v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn  FieldName="Number" Caption="Numero de telefono"  Width="150px">
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxSpinEdit Value="(int?)context.FilterRowValue"
+                                    ValueChanged="(int? v) => context.FilterRowValue = v "
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="PIN"  Caption="PIN"  Width="150px" >
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxSpinEdit Value="(int?)context.FilterRowValue"
+                                    ValueChanged="(int? v) => context.FilterRowValue = v "
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="PUK" Caption="PUK"  Width="150px" >
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxSpinEdit Value="(int?)context.FilterRowValue"
+                                    ValueChanged="(int? v) => context.FilterRowValue = v "
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+        </Columns>
+        <EditFormTemplate Context="EditFormContext">
+            @{
+                var sim = (Sim)EditFormContext.EditModel; 
+            }
+            <DxFormLayout CssClass="w-100">
+                <DxFormLayoutItem Caption="Nº Telefono Linea" ColSpanMd="6">
+                    <DxComboBox Data="lines"
+                     TextFieldName="PhoneNumber"
+                     ValueFieldName="ID"
+                     @bind-Value="@sim.IDLine">
+                     </DxComboBox>
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Nº de serie:" ColSpanMd="6">
+                   <DxMaskedInput @bind-Value="sim.NSerie"
+                    Mask="\d{0,19}" 
+                    MaskMode="@MaskMode.RegEx">
+                   </DxMaskedInput>
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Tipo:" ColSpanMd="6">
+                    <DxComboBox NullText="Selecciona un tipo de sim"
+                                Data="type"
+                                @bind-Value="@sim.Type"
+                    />
+                </DxFormLayoutItem>
+                    <DxFormLayoutItem Caption="Nº de telefono:" ColSpanMd="6">
+                        <DxSpinEdit @bind-Value="@sim.Number" ></DxSpinEdit>
+                       
+                    </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="PIN:" ColSpanMd="6">
+                    <DxMaskedInput @bind-Value="sim.PIN"
+                    Mask="\d{0,4}" 
+                    MaskMode="@MaskMode.RegEx">
+                   </DxMaskedInput>
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="PUK:" ColSpanMd="6">
+                   <DxMaskedInput @bind-Value="sim.PUK"
+                    Mask="\d{0,8}" 
+                    MaskMode="@MaskMode.RegEx">
+                   </DxMaskedInput>
+                </DxFormLayoutItem>
+            </DxFormLayout>
+        </EditFormTemplate>
+    </DxGrid>
+    </div>
+    <br>
+    <div>
+    <p><b>Sims Totales: @sims.Length</b></p>
+    </div>
+}
+
+@code {
+    private Sim[] sims;
+    private Line[] lines;
+
+    List<string> type = new List<string>() { "SIM", "MiniSIM", "MicroSIM" };
+
+    private bool showAlert;
+
+    public SimsSearcher simsSearcher { get; set; }   
+
+    protected override async Task OnInitializedAsync()
+    {
+        sims = await simService.GetSims();
+        lines = await lineService.GetLines();
+    }
+    async Task Grid_EditModelSaving(GridEditModelSavingEventArgs e)
+    {
+        Console.WriteLine("Modelsaving");
+        Console.WriteLine(e);
+        var sim = (Sim)e.EditModel;
+        await (e.IsNew ? simService.InsertSimAsync(sim) : simService.UpdateSimAsync(sim));
+        sims = await simService.GetSims();
+        StateHasChanged();
+    }
+    async Task Grid_DataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        var sim = (Sim)e.DataItem;
+        bool success = await simService.DeleteSimAsync(sim.ID);
+        if (!success)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Ocurrió un error al eliminar");
+            return;
+        }
+        sims = await simService.GetSims();
+        showAlert = true;
+        StateHasChanged();
+
+        await Task.Delay(5000); // Espera de 5 segundos
+        showAlert = false;
+        StateHasChanged();
+    }
+    private async Task InputSearch(string search)
+    {
+        sims = string.IsNullOrEmpty(search)
+        ? await simService.GetSims()
+        : await simService.Buscar(search);
+    }
+    private async Task FormSearch(SimSearcherForm simForm)
+    {
+        sims = simForm.IDLine.Equals(0)
+        ? await simService.GetSims()
+        : await simService.BuscarForm(simForm);
+
+            sims = (simForm.IDLine == 0 && simForm.NSerie==null 
+        && simForm.Number==null && simForm.PIN==null 
+        && simForm.PUK == null && simForm.Type == null)
+        ? await simService.GetSims()
+        : await simService.BuscarForm(simForm);
+
+
+    }
+}

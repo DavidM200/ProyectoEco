@@ -1,0 +1,324 @@
+﻿@page "/terminals"
+@using System.Timers;
+@using GestionTelefonos.Client.Pages.PopUps;
+@using GestionTelefonos.Client.Pages.Searchers
+@using GestionTelefonos.Client.Pages.Components
+@using GestionTelefonos.Shared.Contracts.Forms
+
+@inject Services.ITerminalService terminalService
+@inject Services.IPayMethodService payMethodService
+@inject Services.ILinesTerminalService linesTerminalService
+@inject Services.ITerminalStateService terminalStateService
+@inject Services.IPhoneIncidenceService phoneIncidenceService
+@inject IJSRuntime JsRuntime
+
+@if (showAlert)
+{
+    <div class="alert alert-info" role="alert">
+        Eliminado
+    </div>
+}
+@if (terminals == null)
+{
+    <div class="text-center">
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only"></span>
+    </div>
+    <div>
+        Cargando....
+    </div>
+   </div>
+}
+else
+{
+    //Estilo para los botones de  filtrado en el grid
+    <style>
+        .filter-type-container {
+            display: flex;
+        }
+        .filter-type-container > div {
+            width: 100%;
+        }
+        .filter-type-button {
+            margin-right: 5px;
+        }
+    </style>
+
+    <div style="margin-top:30px;">
+         <h3>Terminales</h3>
+    </div>
+    
+    <br />
+    <div  style="float:right">
+    <TerminalsSearcher
+        @ref=terminalsSearcher
+        onFormSearch=@(async(TerminalSearcherForm)=>{
+            await FormSearch(TerminalSearcherForm);
+        })
+        onInputSearch=@(async (search) => {
+            await InputSearch(search);
+        })
+    />
+    </div>
+    <br/>
+    <div>
+    <DxGrid Data="@terminals"
+        style="margin-top:50px;margin-right:50px"
+        @ref="Grid"
+        KeyFieldName="ID"
+        EditModelSaving="Grid_EditModelSaving"
+        DataItemDeleting="Grid_DataItemDeleting"
+        ShowFilterRow="true"
+        PageSize="5"
+        PagerPosition="GridPagerPosition.TopAndBottom"
+        CssClass ="w-200">
+        <Columns>
+            <DxGridCommandColumn Width="150px" />
+            <DxGridDataColumn FieldName="ID" Visible=false />
+            <DxGridDataColumn FieldName="Name" Caption="Nombre"  Width="100px">
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxTextBox Text="@((string)context.FilterRowValue)"
+                                    TextChanged="(string v) => context.FilterRowValue = v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="Imei" Caption="IMEI" Width="200px" >
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxTextBox Text="@((string)context.FilterRowValue)" 
+                                    TextChanged="(string v) => context.FilterRowValue = v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="BuyDate" Caption="Fecha de Compra"  Width="150px">
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxDateEdit Date="(DateTime?)context.FilterRowValue"
+                                    DateChanged="(DateTime? v) => context.FilterRowValue = v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="IdPayMethod" Visible=false />
+            <DxGridDataColumn Caption="Metodo de pago" FilterRowEditorVisible="false" Width="150px" >
+                <CellDisplayTemplate>
+                    @{
+                        var ter = (Terminal)context.DataItem;
+                        var pay = payMethods.FirstOrDefault(x => x.ID == ter.IdPayMethod);
+                        <span>@(pay == null ? "?" : $"{pay.Name}")</span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="Paid" Visible=false />
+            <DxGridDataColumn Caption="Pagado" FilterRowEditorVisible="false" Width="100px">
+                <CellDisplayTemplate>
+                    @{
+                        var ter = (Terminal)context.DataItem;
+                        <span>@(ter.Paid ? "Si" : "No")</span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="IdTerminalState" Visible=false />
+            <DxGridDataColumn Caption="Estado del Terminal" FilterRowEditorVisible="false" Width="100px">
+                <CellDisplayTemplate>
+                    @{
+                        var ter = (Terminal)context.DataItem;
+                        var terS = terminalStates.FirstOrDefault(x => x.ID == ter.IdTerminalState);
+                        <span>@(terS == null ? "?" : $"{terS.Name}")</span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+           
+            <DxGridDataColumn FieldName="Observations" Caption="Observaciones" Width="100px" >
+                 <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxTextBox Text="@((string)context.FilterRowValue)"
+                                    TextChanged="(string v) => context.FilterRowValue = v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="FeeAmount" Caption="Importe de la Cuota" DisplayFormat="C"  Width="100px">
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxSpinEdit Value="(decimal?)context.FilterRowValue" 
+                                    ValueChanged="(decimal? v) => context.FilterRowValue = v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="NumberOfFees" Caption="Cantidad de Cuotas"  Width="100px">
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxSpinEdit Value="(int?)context.FilterRowValue" 
+                                    ValueChanged="(int? v) => context.FilterRowValue = v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="TotalAmount" Caption="Importe Total" DisplayFormat="C"  Width="100px">
+                <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxSpinEdit Value="(decimal?)context.FilterRowValue" 
+                                    ValueChanged="(decimal? v) => context.FilterRowValue = v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn Caption="Gestion" FilterRowEditorVisible="false"  Width="100px">
+                <CellDisplayTemplate>
+                    @{
+                         <button type="button" @onclick="@(() => terminalPopUp.show((context.DataItem as Terminal).ID))">Gestionar</button>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn Caption="Incidencias" FilterRowEditorVisible="false"  Width="100px">
+                <CellDisplayTemplate>
+                    @{
+                       <button type="button" @onclick="@(() => incidentsPopUp.show((context.DataItem as Terminal).ID))">Incidencias</button>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+        </Columns>
+        
+        <EditFormTemplate Context="EditFormContext">
+            @{
+                var terminal = (Terminal)EditFormContext.EditModel;
+            }
+            <DxFormLayout CssClass="w-100">
+                <DxFormLayoutItem Caption="Nombre:" ColSpanMd="6">
+                    <DxTextBox @bind-Text="@terminal.Name" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="IMEI:" ColSpanMd="6">
+                    <DxMaskedInput @bind-Value="terminal.Imei"
+                    Mask="\d{0,19}" 
+                    MaskMode="@MaskMode.RegEx">
+                   </DxMaskedInput>
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Fecha Compra:" ColSpanMd="6">
+                    <DxDateEdit @bind-Date="@terminal.BuyDate" MinDate="new DateTime(2000, 01, 01)" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Metodo de Pago:" ColSpanMd="6">
+                    <DxComboBox NullText="Selecciona un metodo de pago ..."
+                            Data="payMethods"
+                            TextFieldName=Name
+                            ValueFieldName=ID
+                            @bind-Value="@terminal.IdPayMethod" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Pagado:" ColSpanMd="6">
+                    <DxCheckBox Id="pagado" @bind-Checked="@terminal.Paid" CssClass="mb-1">
+                        Pagado
+                    </DxCheckBox>
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Estado:" ColSpanMd="6">
+                    <DxComboBox NullText="Selecciona un estado ..."
+                            Data="terminalStates"
+                            TextFieldName=Name
+                            ValueFieldName=ID
+                            @bind-Value="@terminal.IdTerminalState" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Observaciones:" ColSpanMd="6">
+                    <DxTextBox @bind-Text="@terminal.Observations" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Importe Cuotas:" ColSpanMd="6">
+                    <DxSpinEdit @bind-Value="@terminal.FeeAmount" DisplayFormat="C" MinValue="0"></DxSpinEdit>
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Numero de Cuotas:" ColSpanMd="6">
+                    <DxSpinEdit @bind-Value="@terminal.NumberOfFees" MinValue="0"></DxSpinEdit>
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Importe Total:"  ColSpanMd="6">
+                    <DxSpinEdit @bind-Value="@terminal.TotalAmount" DisplayFormat="C" Enabled="false" MinValue="0">
+                        @{
+                            terminal.TotalAmount = terminal.NumberOfFees != 0 ? terminal.FeeAmount * terminal.NumberOfFees : terminal.FeeAmount;
+                            <span>@(terminal?.TotalAmount.ToString("C") ?? "?")</span>
+                        }
+                    </DxSpinEdit>
+                </DxFormLayoutItem>
+            </DxFormLayout>
+        </EditFormTemplate>
+    </DxGrid>
+    </div>
+    <br>
+    <div>
+    <p><b>Terminales Totales: @terminals.Length</b></p>
+    </div>
+}
+
+<TerminalPopUp @ref="terminalPopUp" />
+<IncidentsPopUp @ref="incidentsPopUp"/>
+
+@code {
+    private Terminal[] terminals;
+    private PayMethod[] payMethods;
+    private TerminalState[] terminalStates;
+    private LinesTerminal[] linesTerminals;
+    private PhoneIncidence[] phoneIncidences;
+
+    private bool showAlert;
+    DxGrid Grid { get; set; }
+    public TerminalPopUp terminalPopUp { set; get; }
+    public IncidentsPopUp incidentsPopUp { set; get; }
+    public TerminalsSearcher terminalsSearcher { set; get; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        terminals = await terminalService.GetTerminals();
+        payMethods = await payMethodService.GetPayMethods();
+        terminalStates = await terminalStateService.GetTerminalStates();
+        linesTerminals = await linesTerminalService.GetLinesTerminal();
+        phoneIncidences = await phoneIncidenceService.GetIncidents();
+    }
+
+    async Task Grid_EditModelSaving(GridEditModelSavingEventArgs e)
+    {
+        Console.WriteLine("Modelsaving");
+        Console.WriteLine(e);
+        var terminal = (Terminal)e.EditModel;
+        await (e.IsNew ? terminalService.InsertTerminalAsync(terminal) : terminalService.UpdateTerminalAsync(terminal));
+        terminals = await terminalService.GetTerminals();
+        StateHasChanged();
+    }
+
+    async Task Grid_DataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        var terminal = (Terminal)e.DataItem;
+        bool success = await terminalService.DeleteTerminalAsync(terminal.ID);
+        if (!success)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Ocurrió un error al eliminar");
+            return;
+        }
+        terminals = await terminalService.GetTerminals();
+        showAlert = true;
+        StateHasChanged();
+
+        await Task.Delay(5000); // Espera de 5 segundos
+        showAlert = false;
+        StateHasChanged();
+    }
+
+    private async Task InputSearch(string search)
+    {
+        terminals = string.IsNullOrEmpty(search)
+        ? await terminalService.GetTerminals()
+        : await terminalService.Buscar(search);
+    }
+    private async Task FormSearch(TerminalSearcherForm terminalForm)
+    {
+        terminals = string.IsNullOrEmpty(terminalForm.Name)
+        ? await terminalService.GetTerminals()
+        : await terminalService.BuscarForm(terminalForm);
+
+          terminals = (terminalForm.Name == null && terminalForm.BuyDateInicio==null 
+          && terminalForm.BuyDateFin==null && terminalForm.FeeAmount == null
+          && terminalForm.Observations == null && terminalForm.IdPayMethod==0 
+          && terminalForm.IdTerminalState==0 && terminalForm.Imei==null 
+          && terminalForm.Paid==false && terminalForm.NumberOfFees==null)
+        ? await terminalService.GetTerminals()
+        : await terminalService.BuscarForm(terminalForm);
+    }
+    
+}

@@ -1,0 +1,181 @@
+﻿@using GestionTelefonos.Shared.Contracts.Forms
+@using System.Text.Json
+@inject Services.IRateService rateService
+@inject Services.ICompanyService companyService
+@inject Services.ILineService lineService
+@inject IJSRuntime JsRuntime
+
+<div >
+    <input type="search" placeholder="Buscar por observaciones" style="width: 200px; " @bind='search'/>
+    <button class="btn btn-primary" @onclick="openForm" id="dropdown-target-container"><i class="oi oi-caret-bottom" ></i></button>
+    <button class="btn btn-primary" @onclick="@(async () => {await onInputSearch.InvokeAsync(search);search=string.Empty;})"><i class="oi oi-magnifying-glass"></i></button>
+ </div>
+ <DxDropDown
+    @bind-IsOpen="@IsOpen"
+    AllowResize="false"
+    CloseMode="DropDownCloseMode.Close"
+    PreventCloseOnPositionTargetClick="true"
+    PositionMode="DropDownPositionMode.Bottom"
+    PositionTarget="#dropdown-target-container"
+    RestrictionTarget="#Navigation-DropDown-Customization"
+    FooterVisible="true"
+    MinWidth="500"
+    MinHeight="400"
+    MaxWidth="700"
+    MaxHeight="800"
+    Width="max(25vw, 250px)"
+ >
+   <BodyTextTemplate>
+        @if (showAlert)
+        {
+            <div class="alert alert-danger m-4" role="alert">
+                Se han de rellenar todos los campos
+            </div>
+        }else{
+        <div style="padding:10px">
+        <div >
+            <br>
+            <div>
+                <p><b>Compañia</b></p>
+            </div>
+            <br>
+            <div>
+                <DxTagBox
+                    Data="@companies"
+                    Values="@lineSearcher.CompanyIds"
+                    ValueFieldName="ID"
+                    TextFieldName="Name"
+                    NullText="Seleccione una compañia..."
+                    ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+                    SelectedItemsChanged="@((values)=> {
+                        lineSearcher.CompanyIds.Clear();
+                        if(values!=null){
+                           lineSearcher.CompanyIds.AddRange(values.Select(x=> x.ID));
+                        }
+                       
+                    })"
+                />
+            </div>
+       </div>
+       <br>
+       <div>
+           <p><b>Fecha Alta</b></p>
+           <div style="display:flex">
+           <div style="padding:5px">
+            <DxDateEdit @bind-Date="@lineSearcher.AdmitDateInicio"
+            CssClass="cw-320"
+            ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+            MinDate="@MinDate"
+            NullText="Introduce una fecha..."
+            />
+           </div>
+           <div style="padding:5px">
+            <DxDateEdit @bind-Date="@lineSearcher.AdmitDateFin"
+            CssClass="cw-320"
+            ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+            MinDate="@MinDate"
+            NullText="Introduce una fecha..."
+            />
+           </div>
+           </div>
+       </div>
+       <br>
+       <div>
+           <p><b>Fecha Baja</b></p>
+           <div style="display:flex">
+           <div style="padding:5px">
+                <DxDateEdit @bind-Date="@lineSearcher.DischargeDateInicio"
+                CssClass="cw-320"
+                ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+                MinDate="@MinDate"
+                NullText="Introduce una fecha..."
+            />
+            </div>
+            <div style="padding:5px">
+                <DxDateEdit @bind-Date="@lineSearcher.DischargeDateFin"
+                CssClass="cw-320"
+                ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+                MinDate="@MinDate"
+                NullText="Introduce una fecha..."
+            />
+            </div>
+            </div>
+       </div>
+       <br>
+       <div>
+           <p><b>Tarifa</b></p>
+           <DxComboBox NullText="Selecciona una tarifa ..."
+                style="width:215px;"
+                        Data="rates"
+                        TextFieldName="Name"
+                ValueFieldName="ID" 
+                @bind-Value="@lineSearcher.IDRate" />
+       </div>
+       <br>
+       <div>
+           <p><b>Observaciones</b></p>
+           <input type="search" placeholder="Introduce una observacion..." style="width:215px;" @bind='@lineSearcher.Observations' />
+       </div>
+       <br>
+       <div>
+           <p><b>Numero de Telefono</b></p>
+           <input type="search" placeholder="Introduce un telefono..." style="width:215px;" @bind='@lineSearcher.PhoneNumber' />
+       </div>
+       </div>
+       }
+       
+   </BodyTextTemplate>
+   <FooterTextTemplate>
+       <button class="btn btn-primary" @onclick="@(async () => 
+           {
+            await onFormSearch.InvokeAsync(lineSearcher);
+            IsOpen=false;
+            Console.WriteLine(JsonSerializer.Serialize(lineSearcher.CompanyIds));
+            lineSearcher.CompanyIds=null;
+            lineSearcher.AdmitDateInicio=null;
+            lineSearcher.AdmitDateFin=null;
+            lineSearcher.DischargeDateInicio=null;
+            lineSearcher.DischargeDateFin=null;
+            lineSearcher.IDRate=null;
+            lineSearcher.Observations=null;
+            lineSearcher.PhoneNumber=null;
+       })"><i class="oi oi-magnifying-glass"></i>
+       </button>
+   </FooterTextTemplate>
+</DxDropDown>
+
+@code {
+    private bool showAlert = false;
+    bool IsOpen { get; set; } = false;
+    bool IsOpenSelector { get; set; } = false;
+    string search;
+    private Rate[] rates;
+    LineSearcherForm lineSearcher { get; set; } = new();
+    private IEnumerable<Company> companies;
+    List<int> companiesList = new();
+    DateTime  MinDate = new DateTime(2000, 01, 01);
+
+    [Parameter]
+    public EventCallback<LineSearcherForm> onFormSearch { get;  set; }
+    [Parameter]
+    public EventCallback<string> onInputSearch { get; set; }
+
+    async Task openForm()
+    {
+        IsOpen = true;
+
+        lineSearcher.CompanyIds = new List<int>();
+
+        //Console.WriteLine(lineForm.CompanyIds);
+
+        //string json = JsonSerializer.Serialize(lineForm.CompanyIds);
+
+        companies = await companyService.GetCompanies();
+        rates = await rateService.GetRates();
+
+        lineSearcher.CompanyIds = new();
+        //Añade todas las compañias en actibo al TagBox del formulario de busqueda
+        lineSearcher.CompanyIds.AddRange(companies.Where(x => x.DischargeDate == null).Select(x => x.ID)); 
+        StateHasChanged();
+    }
+}

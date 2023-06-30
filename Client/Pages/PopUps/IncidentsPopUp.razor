@@ -1,0 +1,28 @@
+﻿<DxPopup
+    HeaderText="Incidencias"
+    @bind-Visible="@_show"
+    CloseOnEscape="false"
+    CloseOnOutsideClick="false"
+    ShowCloseButton="true"
+    Width=60%>
+<PhoneIncidents @ref="phoneIncidence" value="@_idterminal"/>
+</DxPopup>
+
+@code {
+    private bool _show { set; get; } = false;
+    private string _idterminal { set; get; } = "-1";
+    public PhoneIncidents phoneIncidence { set; get; }
+
+    public void show(int id)
+    {
+        _show = true;
+        _idterminal = "" + id;
+        StateHasChanged();
+        Console.WriteLine("Popup");
+        Console.WriteLine(id);
+    }
+    public void close()
+    {
+        _show = false;
+    }
+}

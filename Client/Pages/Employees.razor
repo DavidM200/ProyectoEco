@@ -1,0 +1,163 @@
+﻿@page "/employees"
+@using System.Timers;
+@using System.Text.Json
+@using GestionTelefonos.Client.Pages.PopUps
+@using GestionTelefonos.Client.Pages.Searchers
+@using GestionTelefonos.Client.Pages.Components
+@inject Services.IEmployeeService employeeService
+@inject Services.ILinesEmployeeTerminalService linesEmployeeTerminalService
+@inject IJSRuntime JsRuntime
+
+@if (showAlert)
+{
+    <div class="alert alert-info" role="alert">
+      Eliminado Correctamente
+    </div>
+}
+@if(employees == null)
+{
+   <div class="text-center">
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only"></span>
+    </div>
+    <div>
+        Cargando....
+    </div>
+   </div>
+}
+else
+{
+    //Estilo para los botones de  filtrado en el grid
+     <style>
+        .filter-type-container {
+            display: flex;
+        }
+
+        .filter-type-container > div {
+            width: 100%;
+        }
+        .filter-type-button {
+            margin-right: 5px;
+        }
+    </style>
+     <div style="margin-top:30px;">
+         <h3>Empleados</h3>
+     </div>
+    
+    <br />
+    //Funciona bien
+    <div style="float:right">
+        <EmployeesSearcher
+            @ref=employeesSearcher
+            onFormSearch=@(async(employee)=>{
+                await FormSearch(employee.Name);
+            })
+            onInputSearch=@(async (search)=>{
+                await InputSearch(search);
+            })
+        />
+    </div>
+    <br />
+    <div>
+   <DxGrid Data="@employees"
+        style="margin-top:50px;margin-right:50px"
+        KeyFieldName="ID"
+        EditModelSaving="Grid_EditModelSaving"
+        DataItemDeleting="Grid_DataItemDeleting"
+        ShowFilterRow="true"
+        PageSize="5"
+        PagerPosition="GridPagerPosition.TopAndBottom"
+        CssClass ="w-100"
+        >        
+    <Columns>
+        <DxGridCommandColumn Width="150px" />
+        <DxGridDataColumn FieldName="ID" Visible=false/>
+        <DxGridDataColumn FieldName="Name" Caption="Nombre"  Width="500px">
+            <FilterRowCellTemplate>
+                <OperatorType FilterContext="@context">
+                    <DxTextBox Text="@((string)context.FilterRowValue)"
+                               TextChanged="(string v) => context.FilterRowValue = v"
+                               ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                </OperatorType>
+            </FilterRowCellTemplate>
+        </DxGridDataColumn>
+        <DxGridDataColumn Caption="Gestion" FilterRowEditorVisible="false"  Width="500px">
+            <CellDisplayTemplate>
+                    @{
+                            <button type ="button" @onclick="@(() =>{employeePopUp.show((context.DataItem as Employee).ID);})">Gestionar</button>
+                    }
+            </CellDisplayTemplate>
+        </DxGridDataColumn>
+    </Columns>
+    <EditFormTemplate Context="EditFormContext">
+        @{
+            var employee = (Employee)EditFormContext.EditModel;
+        }
+        <DxFormLayout CssClass="w-100">
+            <DxFormLayoutItem Caption="Nombre:" ColSpanMd="6">
+                <DxTextBox @bind-Text="@employee.Name" />
+            </DxFormLayoutItem>            
+        </DxFormLayout>
+    </EditFormTemplate>
+</DxGrid>
+</div>
+<br>
+<div>
+<p><b>Empleados Totales: @employees.Length</b></p>
+</div>
+}
+<EmployeePopUp @ref="employeePopUp" />
+
+@code {
+    private Employee[] employees;
+    private LinesEmployeeTerminal[] linesEmployeeTerminals;
+
+    private bool showAlert;
+
+    public EmployeePopUp employeePopUp { set; get; }
+    public EmployeesSearcher employeesSearcher{ set; get; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await employeeService.GetEmployees();
+        linesEmployeeTerminals = await linesEmployeeTerminalService.GetLinesEmployeeTerminal();
+    }
+    async Task Grid_EditModelSaving(GridEditModelSavingEventArgs e) {
+
+        Console.WriteLine("Modelsaving");
+        Console.WriteLine(e);
+        var employee = (Employee)e.EditModel;
+        await (e.IsNew ? employeeService.InsertEmployeeAsync(employee) : employeeService.UpdateEmployeeAsync(employee));
+        employees = await employeeService.GetEmployees();
+        StateHasChanged();
+    }
+    async Task Grid_DataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        var emp = (Employee)e.DataItem;
+        bool success = await employeeService.DeleteEmployeeAsync(emp.ID);
+        if (!success)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Ocurrió un error al eliminar");
+            return;
+        }
+        employees= await employeeService.GetEmployees();
+        showAlert = true;
+        StateHasChanged();
+
+        await Task.Delay(5000); // Espera de 5 segundos
+        showAlert = false;
+        StateHasChanged();
+    }
+    private async Task InputSearch(string search)
+    {
+        employees = string.IsNullOrEmpty(search)
+        ? await employeeService.GetEmployees()
+        : await employeeService.Buscar(search);
+    }
+    private async Task FormSearch(string name)
+    {
+        employees = string.IsNullOrEmpty(name)
+        ? await employeeService.GetEmployees()
+        : await employeeService.BuscarForm(name);
+    }
+}

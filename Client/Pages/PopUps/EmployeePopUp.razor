@@ -1,0 +1,27 @@
+﻿<DxPopup
+    HeaderText="Lineas Empleado Terminales"
+    @bind-Visible="@_show"
+    CloseOnEscape="false"
+    CloseOnOutsideClick="false"
+    ShowCloseButton="true"
+    Width=60%>
+    <LinesEmployeeTerminals @ref="linesEmployeeTerminals" value="@_idemployee" />
+</DxPopup>
+
+@code {
+    private bool _show { set; get; } = false;
+    private string _idemployee { set; get; } = "-1";
+    public LinesEmployeeTerminals linesEmployeeTerminals { set; get; }
+
+    public void show(int id)
+    {
+        _show = true;
+        _idemployee = "" + id;
+        StateHasChanged();
+    }
+    public void close()
+    {
+        _show = false;
+    }
+
+}

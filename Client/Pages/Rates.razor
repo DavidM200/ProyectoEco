@@ -1,0 +1,230 @@
+﻿@page "/rates"
+@using System.Timers;
+@using GestionTelefonos.Client.Pages.Searchers
+@using GestionTelefonos.Client.Pages.Components
+@using GestionTelefonos.Shared.Contracts.Forms 
+@using System.Text.Json
+
+@inject Services.IRateService rateService
+@inject Services.ICompanyService companyService
+@inject IJSRuntime JsRuntime
+
+@if (showAlert)
+{
+    <div class="alert alert-info" role="alert">
+      Eliminado
+    </div>
+}
+@if(rates == null)
+{
+    <div class="text-center">
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only"></span>
+    </div>
+    <div>
+        Cargando....
+    </div>
+   </div>
+}
+else
+{
+    //Estilo para los botones de  filtrado en el grid
+    <style>
+        .filter-type-container {
+            display: flex;
+        }
+        .filter-type-container > div {
+            width: 100%;
+        }
+        .filter-type-button {
+            margin-right: 5px;
+        }
+    </style>
+
+    <div style="margin-top:30px;">
+         <h3>Tarifas</h3>
+    </div>
+
+    
+    <br />
+    //Revisar datos del JSON
+    <div  style="float:right">
+    <RatesSearcher
+            @ref=ratesSearcher
+            onFormSearch=@(async(RateSearcherForm)=>{
+                await FormSearch(RateSearcherForm);
+            })
+            onInputSearch=@(async(search) => {
+                await InputSearch(search);
+            })
+    />
+    </div>
+    <br />
+    <div>
+   <DxGrid Data="@rates"
+        style="margin-top:50px;margin-right:50px"
+        KeyFieldName="ID"
+        EditModelSaving="Grid_EditModelSaving"
+        DataItemDeleting="Grid_DataItemDeleting"
+        ShowFilterRow="true"
+        PageSize="5"
+        PagerPosition="GridPagerPosition.TopAndBottom"
+        CssClass ="w-100"
+        >        
+   <Columns>
+        <DxGridCommandColumn Width="120px" />
+        <DxGridDataColumn FieldName="ID" Visible= "false" />
+        <DxGridDataColumn FieldName="Name" Caption="Nombre"  Width="100px">
+            <FilterRowCellTemplate>
+               <OperatorType FilterContext ="@context">
+                    <DxTextBox Text="@((string)context.FilterRowValue)"
+                        TextChanged="(string v) => context.FilterRowValue = v"
+                        ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"/>
+                </OperatorType>
+            </FilterRowCellTemplate>
+        </DxGridDataColumn>
+        <DxGridDataColumn FieldName="IDCompany" Visible="false" />
+        <DxGridDataColumn Caption="Compañia" FilterRowEditorVisible="false"  Width="100px">
+            <CellDisplayTemplate>
+                    @{
+                        var rat = (Rate)context.DataItem;
+                        var comp = companies.FirstOrDefault(x => x.ID == rat.IDCompany);
+                        <span>@(comp == null ? "?" : $"{comp.Name}")</span>
+                    }
+            </CellDisplayTemplate>
+        </DxGridDataColumn>
+        <DxGridDataColumn FieldName="Amount" DisplayFormat="C" Caption ="Precio"  Width="100px">
+            <FilterRowCellTemplate>
+               <OperatorType FilterContext ="@context">
+                    <DxSpinEdit Value="(decimal?)context.FilterRowValue"
+                        ValueChanged="(decimal? v) => context.FilterRowValue = v"
+                        ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                </OperatorType>
+            </FilterRowCellTemplate>
+        </DxGridDataColumn>
+        <DxGridDataColumn FieldName="Discount" DisplayFormat="C" Caption="Descuento"  Width="100px">
+             <FilterRowCellTemplate>
+               <OperatorType FilterContext ="@context">
+                    <DxSpinEdit Value="(decimal?)context.FilterRowValue"
+                        ValueChanged="(decimal? v) => context.FilterRowValue = v"
+                        ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                </OperatorType>
+            </FilterRowCellTemplate>
+            <CellDisplayTemplate>
+                    @{
+                        var rat = (Rate)context.DataItem;
+                        if (rat.Discount == 0)
+                        {
+                            <span>Sin Descuento</span>
+                        }
+                        else
+                        {
+                            <span>@(rat.Discount + " €")</span>
+                        }
+                    }
+            </CellDisplayTemplate>
+        </DxGridDataColumn>
+        <DxGridDataColumn FieldName="MonthlyNetAmount" DisplayFormat="C" Caption="Precio Mensual"  Width="100px">
+             <FilterRowCellTemplate>
+               <OperatorType FilterContext ="@context">
+                    <DxSpinEdit Value="(decimal?)context.FilterRowValue"
+                        ValueChanged="(decimal? v) => context.FilterRowValue = v"
+                        ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                </OperatorType>
+            </FilterRowCellTemplate>
+        </DxGridDataColumn>
+    </Columns>
+    <EditFormTemplate Context="EditFormContext">
+        @{
+            var rate = (Rate)EditFormContext.EditModel;
+        }
+        <DxFormLayout CssClass="w-100">
+            <DxFormLayoutItem Caption="Nombre: " ColSpanMd="6">
+                <DxTextBox @bind-Text="@rate.Name" />
+            </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Compañia: " ColSpanMd="6">
+                    <DxComboBox NullText="Selecciona una compañia ..."
+                            Data="companies"
+                            TextFieldName=Name
+                            ValueFieldName=ID
+                            @bind-Value="@rate.IDCompany" />
+                </DxFormLayoutItem>
+             <DxFormLayoutItem Caption="Precio: " ColSpanMd="6" > 
+                <DxSpinEdit @bind-Value="@rate.Amount" DisplayFormat="C" MinValue="0" />
+            </DxFormLayoutItem>    
+             <DxFormLayoutItem Caption="Descuento: " ColSpanMd="6">
+                <DxSpinEdit @bind-Value="@rate.Discount" DisplayFormat="C" MinValue="0"/>
+            </DxFormLayoutItem> 
+            <DxFormLayoutItem Caption="Total: " ColSpanMd="6">
+                <DxSpinEdit @bind-Value="@rate.MonthlyNetAmount" DisplayFormat="C" Enabled="false" MinValue="0">
+                     @{
+                        rate.MonthlyNetAmount = rate.Amount - rate.Discount;
+                        <span>@(rate == null ? "?": $"{rate.MonthlyNetAmount} €" )</span>
+                      }
+                </DxSpinEdit>
+            </DxFormLayoutItem>
+        </DxFormLayout>
+    </EditFormTemplate>
+</DxGrid> 
+</div>
+<br>
+<div>
+<p><b>Tarifas Totales: @rates.Length</b></p>
+</div>
+}
+
+@code {
+    private Rate[] rates;
+    private Company[] companies;
+
+    private bool showAlert;
+
+    public RatesSearcher ratesSearcher{ set; get; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        rates = await rateService.GetRates();
+        companies = await companyService.GetCompanies();
+    }
+    async Task Grid_EditModelSaving(GridEditModelSavingEventArgs e) {
+        Console.WriteLine("Modelsaving");
+        Console.WriteLine(e);
+        var rate = (Rate)e.EditModel;
+        await (e.IsNew ? rateService.InsertRateAsync(rate) : rateService.UpdateRateAsync(rate));
+        rates = await rateService.GetRates();
+        StateHasChanged();
+    }
+    async Task Grid_DataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        var rate = (Rate)e.DataItem;
+        bool success = await rateService.DeleteRateAsync(rate.ID);
+        if (!success)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Ocurrió un error al eliminar");
+            return;
+        }
+        rates = await rateService.GetRates();
+        showAlert = true;
+        StateHasChanged();
+
+        await Task.Delay(5000); // Espera de 5 segundos
+        showAlert = false;
+        StateHasChanged();
+    }
+    private async Task InputSearch(string search)
+    {
+        rates = string.IsNullOrEmpty(search)
+        ? await rateService.GetRates()
+        : await rateService.Buscar(search);
+    }
+    private async Task FormSearch(RateSearcherForm rateForm)
+    {
+
+        rates = (rateForm.Name == null && rateForm.Amount==null 
+        && rateForm.Discount==null && rateForm.MonthlyNetAmount==null 
+        && rateForm.CompanyIds == null && rateForm.OperacionAmount == null 
+        && rateForm.OperacionDiscount == null && rateForm.OperacionMonthlyNetAmount == null)
+        ? await rateService.GetRates()
+        : await rateService.BuscarForm(rateForm);
+    }
+}

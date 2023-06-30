@@ -1,0 +1,111 @@
+﻿@using GestionTelefonos.Shared.Contracts.Forms 
+
+<div >
+    <input type="search" placeholder="Buscar por nombre"  style="width: 200px; " @bind='search'/>
+    <button class="btn btn-primary" @onclick="() => IsOpen = !IsOpen" id="dropdown-target-container"><i class="oi oi-caret-bottom" ></i></button>
+    <button class="btn btn-primary" @onclick="@(async () => {await onInputSearch.InvokeAsync(search);search=string.Empty;})">
+        <i class="oi oi-magnifying-glass"></i>
+    </button>
+  </div>
+<DxDropDown
+    @bind-IsOpen="@IsOpen"
+    AllowResize="false"
+    CloseMode="DropDownCloseMode.Close"
+    PreventCloseOnPositionTargetClick="true"
+    PositionMode="DropDownPositionMode.Bottom"
+    PositionTarget="#dropdown-target-container"
+    RestrictionTarget="#Navigation-DropDown-Customization"
+    FooterVisible="true"
+    MinWidth="300"
+    MinHeight="200"
+    MaxWidth="500"
+    MaxHeight="400"
+    Width="max(25vw, 250px)"
+   >
+    <BodyTextTemplate>
+        @if (showAlert)
+        {
+            <div class="alert alert-danger m-4" role="alert">
+                Se han de rellenar todos los campos
+            </div>
+        }
+        else{
+            <div style="padding:10px">
+            <div>
+            <p><b>Nombre</b></p>
+
+            <input type="search" placeholder="Introduce un nombre..."  style="width: 215px; " @bind='@companySearcher.Name' />
+        </div>
+        <br>
+        <div>
+            <p><b>Fecha Alta</b></p>
+            <div style="display:flex">
+                <div style="padding:5px">
+                <DxDateEdit @bind-Date="@companySearcher.AdmitDateInicio"
+                            CssClass="cw-320"
+                            ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+                            MinDate="date" 
+                            NullText="Introduce una fecha..."
+                />
+                </div>
+                <div style="padding:5px">
+                <DxDateEdit @bind-Date="@companySearcher.AdmitDateFin"
+                            CssClass="cw-320"
+                            ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+                            MinDate="date" 
+                            NullText="Introduce una fecha..."
+                />
+                </div>
+            </div>
+        </div>
+        <br>
+        <div>
+            <p><b>Fecha Baja</b></p>
+            <div style="display:flex">
+                <div style="padding:5px">
+                <DxDateEdit @bind-Date="@companySearcher.DischargeDateInicio"
+                            CssClass="cw-320"
+                            ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" 
+                            MinDate="@date"
+                            NullText="Introduce una fecha..."
+                />
+                </div>
+                <div style="padding:5px">
+                <DxDateEdit @bind-Date="@companySearcher.DischargeDateFin"
+                            CssClass="cw-320"
+                            ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+                            MinDate="date" 
+                            NullText="Introduce una fecha..."
+                />
+               </div>         
+            </div>
+        </div>
+        </div>
+        }
+    </BodyTextTemplate>
+    <FooterTextTemplate>
+        <button class="btn btn-primary" @onclick="@(async () => {
+            await onFormSearch.InvokeAsync(companySearcher);
+            IsOpen=false;
+            companySearcher.Name=null;
+            companySearcher.AdmitDateInicio=null;
+            companySearcher.AdmitDateFin=null;
+            companySearcher.DischargeDateInicio=null;
+            companySearcher.DischargeDateFin=null;
+            })"><i class="oi oi-magnifying-glass"></i></button>
+    </FooterTextTemplate>
+</DxDropDown>
+
+@code {
+    private bool showAlert=false;
+    bool IsOpen { get; set; } = false;
+    string search ;
+    CompanySearcherForm companySearcher { get; set; } = new();
+    DateTime  date = new DateTime(2000, 01, 01);
+
+    [Parameter]
+    public EventCallback<CompanySearcherForm> onFormSearch { get; set; }
+   
+    [Parameter]
+    public EventCallback<string> onInputSearch { get; set; }    
+}

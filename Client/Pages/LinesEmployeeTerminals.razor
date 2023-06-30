@@ -1,0 +1,168 @@
+﻿@page "/linesemployeesterminals"
+@page "/linesemployeesterminals/{value}"
+@using System.Text.Json;
+@using System.Timers;
+@inject Services.ILinesEmployeeTerminalService linesEmployeeTerminalService
+@inject Services.ILineService linesService
+@inject Services.ITerminalService terminalsService
+@inject Services.IEmployeeService employeesService
+@inject IJSRuntime JsRuntime
+
+
+@if (showAlert)
+{
+    <div class="alert alert-info" role="alert">
+        Eliminado
+    </div>
+}
+
+@if(linesEmployeeTerminals == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else
+{
+   @* <input type="search" placeholder="Buscar por nombre" @bind=value/>
+    <button class="btn btn-primary" @onclick="buscar">Buscar</button>*@
+
+    <DxGrid Data="@linesEmployeeTerminals"
+        KeyFieldName="ID"
+        EditModelSaving="Grid_EditModelSaving"
+        DataItemDeleting="Grid_DataItemDeleting"
+        ShowGroupedColumns ="true"
+        AutoExpandAllGroupRows="true"
+        >
+        <Columns>
+            <DxGridCommandColumn Width="120px" />
+            <DxGridDataColumn FieldName="ID" Visible=false />
+            <DxGridDataColumn FieldName="IDEmployee" Visible=false GroupIndex="0" Caption="Empleado"/>
+            <DxGridDataColumn Caption="Empleado"  >
+                <CellDisplayTemplate>
+                    @{
+                        var linET = (LinesEmployeeTerminal)context.DataItem;
+                        var emp = employees.FirstOrDefault(x => x.ID == linET.IDEmployee);
+                        <span>@(emp == null ? "?": $"{emp.Name}" )</span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="IDLine" Visible=false />
+            <DxGridDataColumn Caption="Linea">
+                <CellDisplayTemplate>
+                    @{
+                        var linET = (LinesEmployeeTerminal)context.DataItem;
+                        var lin = lines.FirstOrDefault(x => x.ID == linET.IDLine);
+                        <span>@(lin == null ? "?": $"Linea #{lin.ID}" )</span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+             <DxGridDataColumn FieldName="IDTerminal" Visible=false />
+            <DxGridDataColumn Caption="Terminal">
+                <CellDisplayTemplate>
+                    @{
+                        var linET = (LinesEmployeeTerminal)context.DataItem;
+                        var ter = terminals.FirstOrDefault(x => x.ID == linET.IDTerminal);
+                        <span>@(ter == null ? "?": $"{ter.Name}" )</span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            
+            
+        </Columns>
+        <EditFormTemplate Context="EditFormContext">
+            @{
+                var linET = (LinesEmployeeTerminal)EditFormContext.EditModel;
+            }
+            <DxFormLayout CssClass="w-100">
+                <DxFormLayoutItem Caption="Empleado:" ColSpanMd="6" >
+                    <DxComboBox Data="employees.Where(x=>x.ID.ToString() == value)"
+                            TextFieldName="Name"
+                            ValueFieldName="ID"
+                            @bind-Value="@linET.IDEmployee" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Linea:" ColSpanMd="6">
+                    <DxComboBox Data="lines"
+                            TextFieldName="ID"
+                            ValueFieldName="ID"
+                            @bind-Value="@linET.IDLine" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Terminal:" ColSpanMd="6">
+                    <DxComboBox Data="terminals"
+                            TextFieldName="Name"
+                            ValueFieldName="ID"
+                            @bind-Value="@linET.IDTerminal" />
+                </DxFormLayoutItem>
+            </DxFormLayout>
+        </EditFormTemplate>
+    </DxGrid>
+    <br>
+    <p><b>Total Entradas: @linesEmployeeTerminals.Length</b></p>
+}
+
+@code {
+    private Employee[] employees;
+    private Terminal[] terminals;
+    private Line[] lines;
+    private LinesEmployeeTerminal[] linesEmployeeTerminals;
+
+    private bool showAlert;
+    [Parameter]
+    public string value { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await employeesService.GetEmployees();
+        lines = await linesService.GetLines();
+        terminals = await terminalsService.GetTerminals();
+        linesEmployeeTerminals = await linesEmployeeTerminalService.GetLinesEmployeeTerminal();
+
+
+        if (!string.IsNullOrEmpty(value))
+        {
+            await buscar();
+        }
+
+    }
+    async Task Grid_EditModelSaving(GridEditModelSavingEventArgs e)
+    {
+        Console.WriteLine("Modelsaving");
+        Console.WriteLine(e);
+        var linET = (LinesEmployeeTerminal)e.EditModel;
+        await (e.IsNew ? linesEmployeeTerminalService.InsertLinesEmployeeTerminalAsync(linET) 
+        : linesEmployeeTerminalService.UpdateLinesEmployeeTerminalAsync(linET));
+        linesEmployeeTerminals = await linesEmployeeTerminalService.GetLinesEmployeeTerminal();
+        await buscar();
+        StateHasChanged();
+        
+    }
+   
+    async Task Grid_DataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        
+        var linET = (LinesEmployeeTerminal)e.DataItem;
+        bool success = await linesEmployeeTerminalService.DeleteLinesEmployeeTerminalAsync(linET.ID);
+        
+        if (!success)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Ocurrió un error al eliminar");
+            return;
+        }
+        linesEmployeeTerminals = await linesEmployeeTerminalService.GetLinesEmployeeTerminal();
+        showAlert = true;
+        await buscar();
+        StateHasChanged();
+        await Task.Delay(3000); // Espera de 5 segundos
+        showAlert = false;
+        
+        
+
+    }
+    private async Task buscar()
+    {
+        linesEmployeeTerminals = string.IsNullOrEmpty(value)
+            ? await linesEmployeeTerminalService.GetLinesEmployeeTerminal()
+            : await linesEmployeeTerminalService.Buscar(value);
+        //value = string.Empty;
+    }
+}
+
+

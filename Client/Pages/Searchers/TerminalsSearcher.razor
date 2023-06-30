@@ -1,0 +1,164 @@
+﻿@using GestionTelefonos.Shared.Contracts.Forms 
+@using System.Text.Json
+@inject Services.ITerminalStateService terminalStateService
+@inject Services.IPayMethodService payMethodService
+
+<div >
+    <input type="search" placeholder="Buscar por nombre" style="width: 200px; " @bind='search'/>
+    <button class="btn btn-primary" @onclick="openForm" id="dropdown-target-container"><i class="oi oi-caret-bottom" ></i></button>
+    <button class="btn btn-primary" @onclick="@(async () => {await onInputSearch.InvokeAsync(search);search=string.Empty;})">
+       <i class="oi oi-magnifying-glass"></i>
+    </button>
+ </div>
+  <DxDropDown
+    @bind-IsOpen="@IsOpen"
+    AllowResize="false"
+    CloseMode="DropDownCloseMode.Close"
+    PreventCloseOnPositionTargetClick="true"
+    PositionMode="DropDownPositionMode.Bottom"
+    PositionTarget="#dropdown-target-container"
+    RestrictionTarget="#Navigation-DropDown-Customization"
+    FooterVisible="true"
+    MinWidth="900"
+    MinHeight="800"
+    MaxWidth="900"
+    MaxHeight="950"
+    Width="max(25vw, 250px)"
+ >
+   <BodyTextTemplate>
+
+       @if (showAlert)
+        {
+            <div class="alert alert-danger m-5" role="alert">
+                Se han de rellenar todos los campos
+            </div>
+        }
+        else{
+       <div style="padding:10px">
+       <div>
+           <p><b>Nombre</b></p>
+           <input type="search" placeholder="Introduce un nombre..." style="width: 215px; " @bind='@terminalSearcher.Name'/>
+       </div>
+       <br>
+       <div>
+           <p><b>IMEI</b></p>
+           <input type="search" placeholder="Introduce un IMEI..." style="width: 215px; " @bind='@terminalSearcher.Imei'/>
+       </div>
+       <br>
+       <div>
+           <p><b>Fecha de Compra</b></p>
+           <div style="display:flex">
+               <div style="padding:5px">
+                   <DxDateEdit @bind-Date="@terminalSearcher.BuyDateInicio"
+                    CssClass="cw-320"
+                    ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+                    MinDate="@MinDate"
+                    NullText="Introduce una fecha..."
+
+                    />
+               </div>
+               
+               <div style="padding:5px">
+                   <DxDateEdit @bind-Date="@terminalSearcher.BuyDateFin"
+                    CssClass="cw-320"
+                    ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+                    MinDate="@MinDate"
+                    NullText="Introduce una fecha..."
+                    />
+               </div>
+           </div>
+       </div>
+       <br>
+       <div>
+           <p><b>Metodo de Pago</b></p>
+           <DxComboBox NullText="Selecciona un metodo de pago ..."
+                       style="width:215px;"
+                       Data="@payMethods"
+                       TextFieldName="Name"
+                       ValueFieldName="ID"
+                       @bind-Value="@terminalSearcher.IdPayMethod" />
+       </div>
+        <br>
+       <div style="display:flex">
+           <p><b>Pagado</b></p>
+           <div>
+           <input  id="pagado" type="checkbox" style="width:215px" @bind='@terminalSearcher.Paid'/>
+           </div>
+       </div>
+       <br>
+       <div>
+           <p><b>Estado Terminal</b></p>
+           <DxComboBox NullText="Selecciona un estado del terminal ..."
+                        style="width:215px;"
+                        Data="@terminalStates"
+                        TextFieldName="Name"
+                        ValueFieldName="ID"
+                        @bind-Value="@terminalSearcher.IdTerminalState" />
+       </div>
+       <br>
+       <div>
+           <p><b>Observaciones</b></p>
+           <input type="search" placeholder="Introduce una observacion..." style="width: 215px; " @bind='@terminalSearcher.Observations'/>
+       </div>
+       <br>
+       <div>
+           <p><b>Precio de cada plazo</b></p>
+           <input type="search" placeholder="Introduce un precio..." style="width: 215px; " @bind='@terminalSearcher.FeeAmount'/>
+       </div>
+       <br>
+       <div>
+           <p><b>Cantidad de plazos</b></p>
+           <input type="search" placeholder="Introduce los plazos..." style="width: 215px; " @bind='@terminalSearcher.NumberOfFees'/>
+       </div>
+       <br>
+       <div>
+           <p><b>Precio Total</b></p>
+           <input type="search" placeholder="Introduce un precio..." style="width: 215px; " @bind='@terminalSearcher.TotalAmount'/>
+       </div>
+       </div>
+       }
+   </BodyTextTemplate>
+   <FooterTextTemplate>
+       <button class="btn btn-primary" @onclick="@(async () => {    
+       
+            await onFormSearch.InvokeAsync(terminalSearcher);
+            IsOpen=false;
+            terminalSearcher.Name=string.Empty;
+            terminalSearcher.Imei=string.Empty;
+            terminalSearcher.BuyDateInicio=null;
+            terminalSearcher.BuyDateFin=null;
+            terminalSearcher.IdPayMethod=null;
+            terminalSearcher.Paid=null;
+            terminalSearcher.IdTerminalState=null;
+            terminalSearcher.Observations=string.Empty;
+            terminalSearcher.FeeAmount=null;
+            terminalSearcher.NumberOfFees=null;
+            terminalSearcher.TotalAmount=null;
+            
+           
+       })"><i class="oi oi-magnifying-glass"></i></button>
+   </FooterTextTemplate>
+   </DxDropDown>
+@code {
+    private bool showAlert = false;
+    bool IsOpen { get; set; } = false;
+    string search;
+    Terminal terminal { get; set; } = new();
+    private PayMethod[] payMethods;
+    private TerminalState[] terminalStates;
+    TerminalSearcherForm terminalSearcher { get; set; } = new();
+    DateTime MinDate = new DateTime(2000, 01, 01);
+
+    [Parameter]
+    public EventCallback<TerminalSearcherForm> onFormSearch{ get; set; }
+    [Parameter]
+    public EventCallback<string> onInputSearch { get; set; }
+
+    async Task openForm()
+    {
+        IsOpen = true;
+        payMethods = await payMethodService.GetPayMethods();
+        terminalStates = await terminalStateService.GetTerminalStates();
+        StateHasChanged();
+    }
+}

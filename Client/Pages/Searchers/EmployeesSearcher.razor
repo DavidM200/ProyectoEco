@@ -1,0 +1,67 @@
+﻿@using GestionTelefonos.Shared.Contracts.Forms
+
+<div >
+    <input type="search" placeholder="Buscar por nombre" style="width: 200px; " @bind='search'/>
+    <button class="btn btn-primary" @onclick="() => IsOpen = !IsOpen" id="dropdown-target-container"><i class="oi oi-caret-bottom" ></i></button>
+    <button class="btn btn-primary" @onclick="@(async () => {await onInputSearch.InvokeAsync(search);search=string.Empty;})" >
+        <i class="oi oi-magnifying-glass"></i>
+    </button>
+  </div>
+  <DxDropDown
+    @bind-IsOpen="@IsOpen"
+    AllowResize="false"
+    CloseMode="DropDownCloseMode.Close"
+    PreventCloseOnPositionTargetClick="true"
+    PositionMode="DropDownPositionMode.Bottom"
+    PositionTarget="#dropdown-target-container"
+    RestrictionTarget="#Navigation-DropDown-Customization"
+    FooterVisible="true"
+    MinWidth="300"
+    MinHeight="200"
+    MaxWidth="500"
+    MaxHeight="400"
+    Width="max(25vw, 250px)"
+   >
+    <BodyTextTemplate >
+        @if (showAlert)
+        {
+            <div class="alert alert-danger m-4" role="alert">
+                Se han de rellenar todos los campos
+            </div>
+        }else{
+        <div style="padding:10px">
+        <p><b>Nombre</b></p>
+            <input type="search" placeholder="Introduce un nombre..." style="width:215px;" @bind='employee.Name' />
+       </div>
+        }
+    </BodyTextTemplate>
+    <FooterTextTemplate>
+        
+        <button class="btn btn-primary" @onclick="@(async () => {
+        if(employee.Name==null){
+             showAlert=true;
+                await Task.Delay(3000); // Espera de 3 segundos
+                showAlert = false;
+                StateHasChanged();
+        }else{
+        await onFormSearch.InvokeAsync(employee);
+        IsOpen=false;
+        employee.Name=null;
+        }
+        })"><i class="oi oi-magnifying-glass"></i></button>
+    </FooterTextTemplate>
+</DxDropDown>
+
+
+@code {
+    private bool showAlert = false;
+    bool IsOpen { get; set; } = false;
+    string search;
+    Employee employee { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<Employee> onFormSearch{ get; set; }
+    [Parameter]
+    public EventCallback<string> onInputSearch{ get; set; }
+
+}

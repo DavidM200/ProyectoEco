@@ -1,0 +1,118 @@
+﻿@using System.Text.Json
+@using GestionTelefonos.Client.Pages.Components
+@using GestionTelefonos.Shared.Contracts.Forms
+@inject Services.ILineService lineService
+
+
+<div >
+    <input type="search" placeholder="Buscar por tipo" style="width: 200px; " @bind='search' />
+    <button class="btn btn-primary" @onclick="openForm" id="dropdown-target-container"><i class="oi oi-caret-bottom" ></i></button>
+    <button class="btn btn-primary" @onclick="@(async () => {await onInputSearch.InvokeAsync(search);search=string.Empty;})">
+        <i class="oi oi-magnifying-glass"></i>
+    </button>
+</div>
+<DxDropDown @bind-IsOpen="@IsOpen"
+            AllowResize="false"
+            CloseMode="DropDownCloseMode.Close"
+            PreventCloseOnPositionTargetClick="true"
+            PositionMode="DropDownPositionMode.Bottom"
+            PositionTarget="#dropdown-target-container"
+            RestrictionTarget="#Navigation-DropDown-Customization"
+            FooterVisible="true"
+            MinWidth="500"
+            MinHeight="400"
+            MaxWidth="700"
+            MaxHeight="600"
+            Width="max(25vw, 250px)">
+    <BodyTextTemplate>
+        @if (showAlert)
+        {
+            <div class="alert alert-danger m-4" role="alert">
+                Se han de rellenar todos los campos
+            </div>
+        }else{
+        <div style="padding:10px">
+        <div>
+            <p><b>Linea</b></p>
+            <DxComboBox NullText="Selecciona un numero de telefono ..."
+                     Data="@lines"
+                     TextFieldName="PhoneNumber"
+                     ValueFieldName="ID"
+                     @bind-Value="@simSearcher.IDLine"/>
+        </div>
+        <br>
+        <div>
+            <p><b>Numero de Serie</b></p>
+            <input type="search" placeholder="Introduce un numero de serie..." style="width: 200px;" @bind='@simSearcher.NSerie' />
+            
+        </div>
+        <br>
+        <div>
+            <p><b>Tipo</b></p>
+            <input type="search" placeholder="Introduce un tipo..." style="width: 200px;" @bind='@simSearcher.Type' />
+            
+        </div>
+        <br>
+        <div>
+            <p><b>Numero</b></p>
+             <DxComboBox NullText="Selecciona un numero ..."
+                         Data="@lines"
+                         TextFieldName="PhoneNumber"
+                         ValueFieldName="PhoneNumber"
+                         @bind-Value="@simSearcher.Number" />
+        </div>
+        <br>
+        <div>
+            <p><b>PIN</b></p>
+            <input type="search" placeholder="Introduce un pin..." style="width:200px;" @bind='@simSearcher.PIN' />
+            
+        </div>
+        <br>
+        <div>
+            <p><b>PUK</b></p>
+            <input type="search" placeholder="Introduce un puk..." style="width:200px" @bind='@simSearcher.PUK' />
+        </div>
+        </div>
+        }
+    </BodyTextTemplate>
+    <FooterTextTemplate>
+        <button class="btn btn-primary" @onclick="@(async () => {
+            
+            await onFormSearch.InvokeAsync(simSearcher);
+            IsOpen=false;
+            simSearcher.IDLine=null;
+            simSearcher.NSerie=string.Empty;
+            simSearcher.Type=string.Empty;
+            simSearcher.Number=null;
+            simSearcher.PIN=string.Empty;
+            simSearcher.PUK=string.Empty;
+            
+       })">
+            <i class="oi oi-magnifying-glass"></i>
+        </button>
+    </FooterTextTemplate>
+   
+</DxDropDown>
+
+@code {
+    private bool showAlert = false;
+    bool IsOpen { get; set; } = false;
+    string search;
+    SimSearcherForm simSearcher { get; set; } = new();
+    Sim sim { get; set; } = new();
+    private Line[] lines;
+
+
+    [Parameter]
+    public EventCallback<SimSearcherForm> onFormSearch { get; set; }
+
+    [Parameter]
+    public EventCallback<string> onInputSearch { get; set; }
+
+    async Task openForm()
+    {
+        IsOpen = true;
+        lines = await lineService.GetLines();
+        StateHasChanged();
+    }
+}

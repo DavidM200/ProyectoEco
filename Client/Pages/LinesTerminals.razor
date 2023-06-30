@@ -1,0 +1,168 @@
+﻿@page "/linesterminals"
+@page "/linesterminals/{value}"
+@using System.Text.Json;
+@using System.Timers;
+@inject Services.ILinesTerminalService linesTerminalService
+@inject Services.ILineService lineService
+@inject Services.ITerminalService terminalService
+@inject IJSRuntime JsRuntime
+
+@if (showAlert)
+{
+    <div class="alert alert-info" role="alert">
+        Eliminado
+    </div>
+}
+@if (linesTerminals == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else
+{ 
+    <DxGrid Data="@linesTerminals"
+        KeyFieldName="ID"
+        EditModelSaving="Grid_EditModelSaving"
+        DataItemDeleting="Grid_DataItemDeleting"
+        ShowGroupedColumns ="true"
+        AutoExpandAllGroupRows="true"
+        >
+        <Columns>
+            <DxGridCommandColumn Width="120px" />
+            <DxGridDataColumn FieldName="ID" Visible=false />
+            <DxGridDataColumn FieldName="IDLine" Visible=false />
+            <DxGridDataColumn Caption="Linea">
+                <CellDisplayTemplate>
+                    @{
+                        var linT = (LinesTerminal)context.DataItem;
+                        var lin = lines.FirstOrDefault(x => x.ID == linT.IDLine);
+                        <span>@(lin == null ? "?": $"Linea #{linT.IDLine}" )</span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="IDTerminal" Visible=false GroupIndex="0" />
+            <DxGridDataColumn Caption="Terminales">
+                <CellDisplayTemplate>
+                    @{
+                        var linT = (LinesTerminal)context.DataItem;
+                        var ter = terminals.FirstOrDefault(x => x.ID == linT.IDTerminal);
+                        <span>@(ter == null ? "?": $"{ter.Name}" )</span>
+                    }
+                </CellDisplayTemplate>
+            </DxGridDataColumn>
+            <DxGridDataColumn FieldName="StartDate" Caption="Fecha Inicio" />
+            <DxGridDataColumn  FieldName="FinishDate"  Caption="Fecha Fin"  >
+                <CellDisplayTemplate>
+                    @{
+                        var linT = (LinesTerminal)context.DataItem;
+                        if(linT.FinishDate == null)
+                        {
+                            <span>En curso</span>
+                        }
+                        else
+                        {
+                            <span>@(linT.FinishDate?.ToString("dd/MM/yyyy"))</span>
+                        }
+                    }
+            </CellDisplayTemplate>
+            </DxGridDataColumn>
+            
+        </Columns>
+        <EditFormTemplate Context="EditFormContext">
+            @{
+                var linT = (LinesTerminal)EditFormContext.EditModel;
+            }
+            
+            <DxFormLayout CssClass="w-100">
+                <DxFormLayoutItem Caption="Linea:" ColSpanMd="6">
+                    @*.Where(x=>x.ID.ToString() == value) filtro para lines y terminals*@
+                    <DxComboBox Data="lines"
+                            TextFieldName="ID"
+                            ValueFieldName="ID"
+                            @bind-Value="@linT.IDLine" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Terminal: " ColSpanMd="6">
+                   <DxComboBox Data="terminals"
+                            TextFieldName="Name"
+                            ValueFieldName="ID"
+                            @bind-Value="@linT.IDTerminal" />
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Fecha Inicio: " ColSpanMd="6">
+                    <DxDateEdit @bind-Date="@linT.StartDate" ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" MinDate="new DateTime(2000, 01, 01)"/>
+                </DxFormLayoutItem>
+                <DxFormLayoutItem Caption="Fecha Fin: " ColSpanMd="6">
+                    <DxDateEdit @bind-Date="@linT.FinishDate" NullText="En curso..." ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" 
+                    MinDate="new DateTime(2000, 01, 01)" />
+                </DxFormLayoutItem>
+            </DxFormLayout>
+        </EditFormTemplate>
+    </DxGrid>
+    <br>
+    <p><b>Entradas Totalales: @linesTerminals.Length</b></p>
+}
+
+@code {
+    private LinesTerminal[] linesTerminals;
+    private Terminal[] terminals;
+    private Line[] lines;
+
+    
+    private bool showAlert;
+    [Parameter]
+    public string value { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        linesTerminals = await linesTerminalService.GetLinesTerminal();
+        lines = await lineService.GetLines();
+        terminals = await terminalService.GetTerminals();
+
+        if (!string.IsNullOrEmpty(value))
+        {
+            await buscar();
+        }
+
+        StateHasChanged();
+    }
+    async Task Grid_EditModelSaving(GridEditModelSavingEventArgs e)
+    {
+        Console.WriteLine("Modelsaving");
+        Console.WriteLine(e);
+        var linT = (LinesTerminal)e.EditModel;
+        await (e.IsNew ? linesTerminalService.InsertLinesTerminalAsync(linT) : linesTerminalService.UpdateLinesTerminalAsync(linT));
+        linesTerminals = await linesTerminalService.GetLinesTerminal();
+        StateHasChanged();
+        await buscar();
+    }
+
+    async Task Grid_DataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        var LinT = (LinesTerminal)e.DataItem;
+        bool success = await linesTerminalService.DeleteLinesTerminalAsync(LinT.ID);
+        await buscar();
+        if (!success)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Ocurrió un error al eliminar");
+            return;
+        }
+        linesTerminals = await linesTerminalService.GetLinesTerminal();
+        showAlert = true;
+        StateHasChanged();
+
+
+        await Task.Delay(5000); // Espera de 5 segundos
+        showAlert = false;
+        StateHasChanged();
+        await buscar();
+    }
+    private async Task buscar()
+    {
+        linesTerminals = string.IsNullOrEmpty(value)
+            ? await linesTerminalService.GetLinesTerminal()
+            : await linesTerminalService.Buscar(value);
+        //value = string.Empty;
+    }
+
+    
+
+}
+

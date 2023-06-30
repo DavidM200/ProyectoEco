@@ -1,0 +1,87 @@
+﻿<div class="top-row pl-4 navbar navbar-dark">
+<img style="max-width: 100%;max-height: 100%;display: block; margin-left : 10px" src="images\logo\LogoEcoComputer.png" >
+    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu" style="font-family:Roboto">
+    <ul class="navbar-nav me-auto mb-2 mb-md-0">
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> <b>Inicio</b>
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="companies">
+                <span class="oi oi-clipboard" aria-hidden="true"></span> <b>Compañías</b>
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="employees">
+                <span class="oi oi-briefcase" aria-hidden="true"></span> <b>Empleados</b>
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="rates">
+                <span class="oi oi-dollar" aria-hidden="true"></span> <b>Tarifas</b>
+            </NavLink>
+        </li>
+         <li class="nav-item px-3">
+            <NavLink class="nav-link" href="lines">
+                <span class="oi oi-wifi" aria-hidden="true"></span> <b>Lineas</b>
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="sim">
+                <span class="oi oi-aperture" aria-hidden="true"></span> <b>Sim</b>
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="terminals">
+                <span class="oi oi-phone" aria-hidden="true"></span> <b>Terminales</b>
+            </NavLink>
+        </li>
+        @*<li class="nav-item px-3">
+            <NavLink class="nav-link" href="paymethods">
+                <span class="oi oi-credit-card" aria-hidden="true"></span>Metodo de pago 
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="terminalStates">
+                <span class="oi oi-question-mark" aria-hidden="true"></span>Estado del Terminal
+            </NavLink>
+        </li>*@
+        @*<li class="nav-item px-3">
+            <NavLink class="nav-link" href="phoneincidents">
+                <span class="oi oi-list-rich" aria-hidden="true"></span> Incidencias
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="linesemployees">
+                <span class="oi oi-list-rich" aria-hidden="true"></span> Lineas Empleados
+            </NavLink>
+        </li>*@
+        @* <li class="nav-item px-3">
+            <NavLink class="nav-link" href="linesterminals">
+                <span class="oi oi-list-rich" aria-hidden="true"></span> Lineas Terminales
+            </NavLink>
+        </li>*@
+       @* <li class="nav-item px-3">
+            <NavLink class="nav-link" href="linesemployeesterminals">
+                <span class="oi oi-list-rich" aria-hidden="true"></span> Lineas Empleados Terminales
+            </NavLink>
+        </li>*@
+    </ul>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
+

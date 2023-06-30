@@ -1,0 +1,116 @@
+﻿@page "/terminalStates"
+@using System.Timers;
+@inject Services.ITerminalStateService terminalStateService
+@inject IJSRuntime JsRuntime
+
+<h3>Estado del Terminal</h3>
+@if (showAlert)
+{
+    <div class="alert alert-info" role="alert">
+        Eliminado
+    </div>
+}
+@if (terminalStates == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else
+{
+    <input type="search" placeholder="Buscar por nombre" @bind='busqueda' />
+    <button class="btn btn-primary" @onclick="buscar">Buscar</button>
+
+    <DxGrid Data="@terminalStates"
+        KeyFieldName="ID"
+        EditModelSaving="Grid_EditModelSaving"
+        DataItemDeleting="Grid_DataItemDeleting"
+        ShowFilterRow="true">
+        <Columns>
+            <DxGridCommandColumn Width="120px" />
+            <DxGridDataColumn FieldName="ID" Visible=false />
+            <DxGridDataColumn FieldName="Name" Caption="Nombre" />
+        </Columns>
+        
+        <EditFormTemplate Context="EditFormContext">
+            @{
+                var terminalState = (TerminalState)EditFormContext.EditModel;
+            }
+            <DxFormLayout CssClass="w-100">
+                <DxFormLayoutItem Caption="Nombre:" ColSpanMd="6">
+                    <DxTextBox @bind-Text="@terminalState.Name" />
+                </DxFormLayoutItem>
+            </DxFormLayout>
+        </EditFormTemplate>
+    </DxGrid>
+    <br>
+    <p><b>Entradas Totales: @terminalStates.Length</b></p>
+}
+@code {
+    private TerminalState[] terminalStates;
+    private string busqueda;
+    private bool showAlert;
+
+    protected override async Task OnInitializedAsync()
+    {
+        terminalStates = await terminalStateService.GetTerminalStates();
+    }
+    async Task Grid_EditModelSaving(GridEditModelSavingEventArgs e)
+    {
+
+        Console.WriteLine("Modelsaving");
+        Console.WriteLine(e);
+
+        var terminalState = (TerminalState)e.EditModel;
+        if (e.IsNew)
+            await terminalStateService.InsertTerminalStateAsync(terminalState);
+        else
+            await terminalStateService.UpdateTerminalStateAsync(terminalState);
+
+        terminalStates = await terminalStateService.GetTerminalStates();
+        StateHasChanged();
+    }
+    async Task Grid_DataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        var terminalState = (TerminalState)e.DataItem;
+        //await companyService.deleteCompanyAsync(company.ID);
+        bool success = await terminalStateService.DeleteTerminalStateAsync(terminalState.ID);
+        if (!success)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Ocurrió un error al eliminar");
+            return;
+        }
+
+        terminalStates = await terminalStateService.GetTerminalStates();
+        Timer timer = new Timer();
+        timer.Interval = 1000;
+        int countDown = 5;
+        timer.Elapsed += (o, e) =>
+        {
+            if (countDown <= 0)
+            {
+                showAlert = false;
+                timer.Dispose();
+                StateHasChanged();
+            }
+            else
+            {
+                countDown -= 1;
+                StateHasChanged();
+            }
+        };
+        timer.Start();
+        showAlert = true;
+        StateHasChanged();
+    }
+    private async Task buscar()
+    {
+        if (string.IsNullOrEmpty(busqueda))
+        {
+            terminalStates = await terminalStateService.GetTerminalStates();
+            StateHasChanged();
+            return;
+        }
+        terminalStates = await terminalStateService.Buscar(busqueda);
+        StateHasChanged();
+        busqueda = string.Empty;
+    }
+}

@@ -1,0 +1,266 @@
+﻿@page "/lines"
+@using System.Text.Json;
+@using System.Timers;
+@using GestionTelefonos.Client.Pages.PopUps
+@using GestionTelefonos.Client.Pages.Searchers
+@using GestionTelefonos.Client.Pages.Components
+@using GestionTelefonos.Shared.Contracts.Forms
+@inject Services.ILineService lineService
+@inject Services.ICompanyService companyService
+@inject Services.ILinesTerminalService linesTerminalService
+@inject Services.IRateService rateService
+@inject IJSRuntime JsRuntime
+
+
+@if (showAlert)
+{
+    <div class="alert alert-info" role="alert">
+      Eliminado Correctamente
+    </div>
+}
+
+@if(lines == null)
+{
+     <div class="text-center">
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only"></span>
+    </div>
+    <div>
+        Cargando....
+    </div>
+   </div>
+}
+else
+{
+    //Estilo para los botones de  filtrado en el grid
+    <style>
+        .filter-type-container {
+            display: flex;
+        }
+        .filter-type-container > div {
+            width: 100%;
+        }
+        .filter-type-button {
+            margin-right: 5px;
+        }
+    </style>
+    <div style="margin-top:30px;">
+         <h3>Lineas</h3>
+    </div>
+   
+    <br />
+    //Revisar datos del JSON
+    <div style="float:right">
+    <LinesSearcher 
+        @ref=linesSearcher
+        onFormSearch=@(async(LineSearcherForm)=> {
+            await FormSearch(LineSearcherForm);
+        })
+        onInputSearch=@(async (search) =>{
+        await InputSearch(search);
+        })
+        />
+        </div>
+        <br />
+        <div>
+    <DxGrid Data="@lines"
+        style="margin-top:50px;margin-right:50px"
+        KeyFieldName="ID"
+        EditModelSaving="Grid_EditModelSaving"
+        DataItemDeleting="Grid_DataItemDeleting"
+        ShowFilterRow="true"
+        PageSize="5"
+        PagerPosition="GridPagerPosition.TopAndBottom"
+        CssClass ="w-100"
+        >        
+    <Columns>
+        <DxGridCommandColumn Width="120px" />
+        <DxGridDataColumn FieldName="ID" Visible=false />
+        <DxGridDataColumn FieldName="IDCompany" Visible=false/>
+            <DxGridDataColumn Caption="Compañía" FilterRowEditorVisible="false"  Width="100px">
+                <CellDisplayTemplate >
+                    @{
+                        var line = (Line)context.DataItem;
+                        //Console.WriteLine(JsonSerializer.Serialize(line));
+                        var comp = companies.FirstOrDefault(x => x.ID == line.IDCompany);
+                        <span>@(comp == null ? $"Compañía #{line.IDCompany}" : comp.Name)</span>
+                    }
+                </CellDisplayTemplate>
+        </DxGridDataColumn>
+        <DxGridDataColumn FieldName="AdmitDate" Caption="Fecha de alta"  Width="100px">
+             <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxDateEdit Date="(DateTime?)context.FilterRowValue"
+                                    DateChanged="(DateTime? v )  => context.FilterRowValue= v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+        </DxGridDataColumn>
+        <DxGridDataColumn FieldName="DischargeDate" Caption="Fecha de baja" Width="100px" >
+             <FilterRowCellTemplate>
+                    <OperatorType FilterContext="@context">
+                        <DxDateEdit Date="(DateTime?)context.FilterRowValue"
+                                    DateChanged="(DateTime? v )  => context.FilterRowValue= v"
+                                    ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                    </OperatorType>
+                </FilterRowCellTemplate>
+            <CellDisplayTemplate>
+                    @{
+                        var lin = (Line)context.DataItem;
+                        if(lin.DischargeDate == null)
+                        {
+                            <span>En curso</span>
+                        }
+                        else
+                        {
+                            <span>@(lin.DischargeDate?.ToString("dd/MM/yyyy"))</span>
+                        }
+                    }
+            </CellDisplayTemplate>
+        </DxGridDataColumn>
+        <DxGridDataColumn FieldName="IDRate" Visible=false/>
+        <DxGridDataColumn Caption="Tarifa" FilterRowEditorVisible="false"  Width="100px">
+                <CellDisplayTemplate>
+                    @{
+                        var line = (Line)context.DataItem;
+                        var rat = rates.FirstOrDefault(x => x.ID == line.IDRate);
+                        <span>@(rat == null ? "?" : $"{rat.Name}")</span>
+                    }
+                </CellDisplayTemplate>
+         </DxGridDataColumn>
+        <DxGridDataColumn FieldName="Observations" Caption="Observaciones"  Width="100px" >
+        <FilterRowCellTemplate>
+                <OperatorType FilterContext="@context">
+                    <DxTextBox Text="@((string)context.FilterRowValue)"
+                                TextChanged="(string v)  => context.FilterRowValue = v"
+                                ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                </OperatorType>
+            </FilterRowCellTemplate>
+        </DxGridDataColumn>
+        <DxGridDataColumn FieldName="PhoneNumber" Caption="Numero de Telefono"   Width="200px">
+            <FilterRowCellTemplate>
+                <OperatorType FilterContext="@context">
+                    <DxSpinEdit Value="(int?)context.FilterRowValue"
+                                ValueChanged="(int? v)  => context.FilterRowValue = v"
+                                ClearButtonDisplayMode=DataEditorClearButtonDisplayMode.Auto/>
+                </OperatorType>
+            </FilterRowCellTemplate>
+        </DxGridDataColumn>
+        <DxGridDataColumn Caption="Gestion" FilterRowEditorVisible="false"  Width="100px">
+            <CellDisplayTemplate>
+                    @{
+                        <button type="button" @onclick="@(() => {linesPopUp.show((context.DataItem as Line).ID);})">Gestionar</button>
+                    }
+            </CellDisplayTemplate>
+        </DxGridDataColumn>
+    </Columns>
+    <EditFormTemplate Context="EditFormContext">
+            @{
+                var line = (Line)EditFormContext.EditModel;
+            }
+        <DxFormLayout CssClass="w-100">
+            <DxFormLayoutItem Caption="Compañia:" ColSpanMd="6">
+                <DxComboBox NullText="Selecciona una compañia ..."
+                    Data="companies" 
+                    TextFieldName="Name"
+                ValueFieldName="ID"
+                @bind-Value="@line.IDCompany" />
+            </DxFormLayoutItem> 
+            <DxFormLayoutItem Caption="Fecha Alta:" ColSpanMd="6">
+                <DxDateEdit @bind-Date="@line.AdmitDate" ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" MinDate="new DateTime(2000, 01, 01)"/>
+            </DxFormLayoutItem> 
+            <DxFormLayoutItem Caption="Fecha Baja:" ColSpanMd="6">
+                    <DxDateEdit @bind-Date="@line.DischargeDate" NullText="En curso..." ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" 
+                    MinDate="new DateTime(2000, 01, 01)" />
+            </DxFormLayoutItem> 
+         <DxFormLayoutItem Caption="Tarifa:" ColSpanMd="6">
+             <DxComboBox NullText="Selecciona una tarifa ..."
+                Data="rates.Where(x=>x.IDCompany == line.IDCompany)" 
+                TextFieldName="Name"
+                ValueFieldName="ID" 
+                @bind-Value="@line.IDRate" />
+            </DxFormLayoutItem> 
+            <DxFormLayoutItem Caption="Observaciones:" ColSpanMd="6">
+                <DxTextBox @bind-Text="@line.Observations" /> 
+            </DxFormLayoutItem> 
+            <DxFormLayoutItem Caption="Numero Telefono: " ColSpanMd="6">
+               <DxMaskedInput @bind-Value="line.PhoneNumber"
+                    Mask="\d{0,9}" 
+                    MaskMode="@MaskMode.RegEx"
+                    >
+                   </DxMaskedInput>
+            </DxFormLayoutItem> 
+            <DxFormLayoutItem ColSpanMd="12">
+                <ValidationSummary/>
+            </DxFormLayoutItem>
+        </DxFormLayout>
+    </EditFormTemplate>
+</DxGrid>
+</div>
+<br>
+<div>
+<p><b>Lineas Totales: @lines.Length</b></p>
+</div>
+}
+<LinesPopUp @ref="linesPopUp"/>
+@code {
+    private Line[] lines;
+    private Company[] companies;
+    private LinesTerminal[] linesTerminals;
+    private Rate[] rates;
+
+    private bool showAlert;
+
+    public LinesPopUp linesPopUp{ set; get; }
+    public LinesSearcher linesSearcher { set; get; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        lines = await lineService.GetLines();
+        companies = await companyService.GetCompanies();
+        rates = await rateService.GetRates();
+        linesTerminals = await linesTerminalService.GetLinesTerminal();
+    }
+    async Task Grid_EditModelSaving(GridEditModelSavingEventArgs e) {
+
+        Console.WriteLine("Modelsaving");
+        Console.WriteLine(e);
+        var line = (Line)e.EditModel;
+        await (e.IsNew ? lineService.InsertLineAsync(line) : lineService.UpdateLineAsync(line));
+        lines = await lineService.GetLines();
+        StateHasChanged();
+    }
+    async Task Grid_DataItemDeleting(GridDataItemDeletingEventArgs e)
+    {
+        var line = (Line)e.DataItem;
+        bool success = await lineService.DeleteLineAsync(line.ID);
+        if (!success)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Ocurrió un error al eliminar");
+            return;
+        }
+        lines = await lineService.GetLines();
+        showAlert = true;
+        StateHasChanged();
+
+        await Task.Delay(5000); // Espera de 5 segundos
+        showAlert = false;
+        StateHasChanged();
+    }
+    private async Task InputSearch(string search)
+    {
+        lines = string.IsNullOrEmpty(search)
+        ? await lineService.GetLines()
+        : await lineService.Buscar(search);
+    }
+    private async Task FormSearch(LineSearcherForm lineForm)
+    {
+      
+        lines = (lineForm.IDRate == null && lineForm.AdmitDateInicio==null 
+        && lineForm.AdmitDateFin==null && lineForm.DischargeDateInicio==null 
+        && lineForm.DischargeDateFin == null && lineForm.CompanyIds == null
+        && lineForm.Observations == null && lineForm.PhoneNumber==null)
+        ? await lineService.GetLines()
+        : await lineService.BuscarForm(lineForm);
+    }
+}
