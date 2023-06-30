@@ -1,0 +1,21 @@
+﻿** Aspectos destacados
+     Tablas que se volverán a crear con los datos migrados
+       Ninguno
+     Índices clúster que se van a quitar
+       Ninguno
+     Índices clúster que se van a crear
+       Ninguno
+     Posibles incidencias de datos
+       Ninguno
+
+** Acciones del usuario
+     Crear
+       [dbo].[Companies] (Tabla)
+       [dbo].[Employees] (Tabla)
+       [dbo].[Lines] (Tabla)
+       [dbo].[PhoneIncidents] (Tabla)
+       [dbo].[Rates] (Tabla)
+       [dbo].[Sim] (Tabla)
+       [dbo].[Terminals] (Tabla)
+
+** Acciones de compatibilidad

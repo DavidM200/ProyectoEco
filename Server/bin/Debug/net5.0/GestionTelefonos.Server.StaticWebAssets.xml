@@ -1,0 +1,6 @@
+﻿<StaticWebAssets Version="1.0">
+  <ContentRoot BasePath="/" Path="F:\Blazor\GestionTelefonos\GestionTelefonos\Client\bin\Debug\net5.0\wwwroot\" />
+  <ContentRoot BasePath="/" Path="F:\Blazor\GestionTelefonos\GestionTelefonos\Client\obj\Debug\net5.0\scopedcss\bundle\" />
+  <ContentRoot BasePath="/" Path="F:\Blazor\GestionTelefonos\GestionTelefonos\Client\wwwroot\" />
+  <ContentRoot BasePath="_content/DevExpress.Blazor" Path="C:\Users\David\.nuget\packages\devexpress.blazor\21.2.8\build\..\staticwebassets\" />
+</StaticWebAssets>

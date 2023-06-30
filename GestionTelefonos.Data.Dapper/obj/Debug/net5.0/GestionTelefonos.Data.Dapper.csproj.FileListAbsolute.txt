@@ -1,0 +1,15 @@
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\bin\Debug\net5.0\GestionTelefonos.Data.Dapper.deps.json
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\bin\Debug\net5.0\GestionTelefonos.Data.Dapper.dll
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\bin\Debug\net5.0\GestionTelefonos.Data.Dapper.pdb
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\bin\Debug\net5.0\GestionTelefonos.Shared.dll
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\bin\Debug\net5.0\GestionTelefonos.Shared.pdb
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\obj\Debug\net5.0\GestionTelefonos.Data.Dapper.csproj.AssemblyReference.cache
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\obj\Debug\net5.0\GestionTelefonos.Data.Dapper.GeneratedMSBuildEditorConfig.editorconfig
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\obj\Debug\net5.0\GestionTelefonos.Data.Dapper.AssemblyInfoInputs.cache
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\obj\Debug\net5.0\GestionTelefonos.Data.Dapper.AssemblyInfo.cs
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\obj\Debug\net5.0\GestionTelefonos.Data.Dapper.csproj.CoreCompileInputs.cache
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\obj\Debug\net5.0\GestionTelefonos.Data.Dapper.csproj.CopyComplete
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\obj\Debug\net5.0\GestionTelefonos.Data.Dapper.dll
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\obj\Debug\net5.0\refint\GestionTelefonos.Data.Dapper.dll
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\obj\Debug\net5.0\GestionTelefonos.Data.Dapper.pdb
+F:\Blazor\GestionTelefonos\GestionTelefonos.Data.Dapper\obj\Debug\net5.0\ref\GestionTelefonos.Data.Dapper.dll

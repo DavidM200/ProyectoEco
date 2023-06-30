@@ -1,0 +1,12 @@
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\bin\Debug\net5.0\GestionTelefonos.Shared.deps.json
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\bin\Debug\net5.0\GestionTelefonos.Shared.dll
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\bin\Debug\net5.0\GestionTelefonos.Shared.pdb
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\obj\Debug\net5.0\GestionTelefonos.Shared.csproj.AssemblyReference.cache
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\obj\Debug\net5.0\GestionTelefonos.Shared.GeneratedMSBuildEditorConfig.editorconfig
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\obj\Debug\net5.0\GestionTelefonos.Shared.AssemblyInfoInputs.cache
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\obj\Debug\net5.0\GestionTelefonos.Shared.AssemblyInfo.cs
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\obj\Debug\net5.0\GestionTelefonos.Shared.csproj.CoreCompileInputs.cache
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\obj\Debug\net5.0\GestionTelefonos.Shared.dll
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\obj\Debug\net5.0\refint\GestionTelefonos.Shared.dll
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\obj\Debug\net5.0\GestionTelefonos.Shared.pdb
+F:\Blazor\GestionTelefonos\GestionTelefonos\Shared\obj\Debug\net5.0\ref\GestionTelefonos.Shared.dll

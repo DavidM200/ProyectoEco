@@ -1,0 +1,10 @@
+F:\Blazor\GestionTelefonos\Database\bin\Debug\Database.dacpac
+F:\Blazor\GestionTelefonos\Database\bin\Debug\Database.dll
+F:\Blazor\GestionTelefonos\Database\bin\Debug\Database.pdb
+F:\Blazor\GestionTelefonos\Database\obj\Debug\Database.sqlproj.AssemblyReference.cache
+F:\Blazor\GestionTelefonos\Database\obj\Debug\Model.xml
+F:\Blazor\GestionTelefonos\Database\obj\Debug\refactor.xml
+F:\Blazor\GestionTelefonos\Database\obj\Debug\postdeploy.sql
+F:\Blazor\GestionTelefonos\Database\obj\Debug\predeploy.sql
+F:\Blazor\GestionTelefonos\Database\obj\Debug\Database.dll
+F:\Blazor\GestionTelefonos\Database\obj\Debug\Database.pdb

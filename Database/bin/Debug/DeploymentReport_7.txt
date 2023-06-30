@@ -1,0 +1,33 @@
+﻿** Aspectos destacados
+     Tablas que se volverán a crear con los datos migrados
+       Ninguno
+     Índices clúster que se van a quitar
+       Ninguno
+     Índices clúster que se van a crear
+       Ninguno
+     Posibles incidencias de datos
+       Se está quitando la columna [dbo].[Lines].[PIN]; puede que se pierdan datos.
+       Se está quitando la columna [dbo].[Lines].[PUK]; puede que se pierdan datos.
+       Se está quitando la columna [dbo].[Lines].[SerialSimNumber]; puede que se pierdan datos.
+       Se está quitando la columna [dbo].[Lines].[SimType]; puede que se pierdan datos.
+       El tipo de la columna Type en la tabla [dbo].[Sim] es  NVARCHAR (50) NOT NULL, pero se va a cambiar a  VARCHAR (50) NOT
+         NULL. Si la columna contiene datos no compatibles con el tipo  VARCHAR (50) NOT NULL, podrían producirse pérdidas de
+         datos y errores en la implementación.
+
+** Acciones del usuario
+     Quitar
+       [dbo].[FK_Lines_Companies] (Clave externa)
+     Modificar
+       [dbo].[Lines] (Tabla)
+       [dbo].[Sim] (Tabla)
+     Crear
+       [dbo].[PhoneIncidents] (Tabla)
+
+** Acciones de compatibilidad
+
+Se está quitando la columna [dbo].[Lines].[PIN]; puede que se pierdan datos.
+Se está quitando la columna [dbo].[Lines].[PUK]; puede que se pierdan datos.
+Se está quitando la columna [dbo].[Lines].[SerialSimNumber]; puede que se pierdan datos.
+Se está quitando la columna [dbo].[Lines].[SimType]; puede que se pierdan datos.
+El tipo de la columna Type en la tabla [dbo].[Sim] es  NVARCHAR (50) NOT NULL, pero se va a cambiar a  VARCHAR (50) NOT NULL. Si la columna contiene datos no compatibles con el tipo  VARCHAR (50) NOT NULL, podrían producirse pérdidas de datos y errores en la implementación.
+

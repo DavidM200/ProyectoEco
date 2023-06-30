@@ -1,0 +1,24 @@
+﻿** Aspectos destacados
+     Tablas que se volverán a crear con los datos migrados
+       Ninguno
+     Índices clúster que se van a quitar
+       Ninguno
+     Índices clúster que se van a crear
+       Ninguno
+     Posibles incidencias de datos
+       El tipo de la columna Type en la tabla [dbo].[Sim] es  NVARCHAR (50) NOT NULL, pero se va a cambiar a  INT NOT NULL. Si
+         la columna contiene datos no compatibles con el tipo  INT NOT NULL, podrían producirse pérdidas de datos y errores en la
+         implementación.
+
+** Acciones del usuario
+     Quitar
+       [dbo].[FK_Lines_Companies] (Clave externa)
+     Modificar
+       [dbo].[Sim] (Tabla)
+     Crear
+       [dbo].[Terminals] (Tabla)
+
+** Acciones de compatibilidad
+
+El tipo de la columna Type en la tabla [dbo].[Sim] es  NVARCHAR (50) NOT NULL, pero se va a cambiar a  INT NOT NULL. Si la columna contiene datos no compatibles con el tipo  INT NOT NULL, podrían producirse pérdidas de datos y errores en la implementación.
+
